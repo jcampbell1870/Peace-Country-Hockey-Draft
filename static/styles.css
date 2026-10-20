@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Peace Country Hockey Draft</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container">
+        <div>
+          <p class="eyebrow">Peace Country Hockey Draft</p>
+          <h1>NHL Draft Pool</h1>
+        </div>
+        <a id="payLink" class="button button-primary" href="#" target="_blank" rel="noopener noreferrer">Pay $20 Entry Fee</a>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <span class="badge">Regular Season + Playoffs</span>
+          <h2>Draft one player from each of 20 boxes</h2>
+          <p>
+            Entry fee is $20 per entrant. First place wins $1,000 cash. Weekly scoring updates occur automatically every Monday at 7:00 p.m. Eastern Standard Time.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <p class="stat-label">Entry Fee</p>
+          <p class="stat-value">$20</p>
+          <p class="stat-label">1st Place Prize</p>
+          <p class="stat-value">$1,000 cash</p>
+        </div>
+      </section>
+
+      <section class="rules card">
+        <h3>Pool Rules</h3>
+        <ul>
+          <li>There are 20 boxes, each containing 5 NHL players.</li>
+          <li>Each entrant selects one player from every box for a total of 20 players.</li>
+          <li>Points are automatically updated every Monday at 7:00 p.m. Eastern Standard Time.</li>
+          <li>Best total points across the regular season and playoffs determine the ranking.</li>
+          <li>Entrants can submit payment through the company Stripe point-of-sale system.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h3>Submit Your Draft</h3>
+        <form id="entryForm" class="entry-form">
+          <div class="personal-fields">
+            <label>
+              Entrant Name
+              <input type="text" id="entrantName" name="name" required />
+            </label>
+            <label>
+              Email Address
+              <input type="email" id="entrantEmail" name="email" required />
+            </label>
+          </div>
+
+          <div id="boxList" class="box-list"></div>
+
+          <button type="submit" class="button button-primary full-width">Submit Entry</button>
+        </form>
+      </section>
+
+      <section class="card leaderboard-card">
+        <div class="leaderboard-header">
+          <h3>Leaderboard</h3>
+          <div class="leaderboard-note">Updated weekly Monday at 7:00 PM EST</div>
+        </div>
+        <div id="leaderboard" class="leaderboard"></div>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

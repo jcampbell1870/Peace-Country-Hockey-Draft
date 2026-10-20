@@ -48,15 +48,16 @@ function renderBoxes(boxes) {
 async function loadPaymentConfig() {
   try {
     const data = await fetchJson('/api/config');
-    const paymentLink = data.payment?.stripePaymentLink || '#';
-    payLink.href = paymentLink;
-
-    if (!paymentLink || paymentLink === '#') {
-      payLink.textContent = 'Set Stripe Payment Link';
-      payLink.setAttribute('aria-disabled', 'true');
-      payLink.style.opacity = '0.7';
+    const paymentLink = data.payment?.stripePaymentLink || '';
+    if (paymentLink) {
+      payLink.href = paymentLink;
+      payLink.textContent = 'Pay $20 Entry Fee';
+    } else {
+      payLink.href = '#';
+      payLink.textContent = 'Set Stripe Link';
+      payLink.title = data.payment?.stripePosNote || 'Add your Stripe point-of-sale link in Render env vars.';
       payLink.style.pointerEvents = 'none';
-      payLink.title = data.payment?.stripePosNote || 'Add your Stripe payment link or POS instructions.';
+      payLink.style.opacity = '0.75';
     }
   } catch (error) {
     payLink.href = '#';
@@ -97,7 +98,6 @@ async function loadBoxes() {
   try {
     const data = await fetchJson('/api/boxes');
     renderBoxes(data.boxes);
-    document.title = 'Peace Country Hockey Draft';
   } catch (error) {
     boxList.innerHTML = `<div class="notification error">${error.message}</div>`;
   }
@@ -107,10 +107,7 @@ entryForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
   const formData = new FormData(entryForm);
-  const selections = Array.from({ length: 20 }, (_, index) => {
-    const key = `box-${index + 1}`;
-    return formData.get(key) || null;
-  }).filter(Boolean);
+  const selections = Array.from({ length: 20 }, (_, index) => formData.get(`box-${index + 1}`)).filter(Boolean);
 
   const payload = {
     name: document.getElementById('entrantName').value,
@@ -126,7 +123,7 @@ entryForm.addEventListener('submit', async (event) => {
 
     const notice = document.createElement('div');
     notice.className = 'notification';
-    notice.textContent = `${result.message} ${result.leaderboard?.length ? 'Your entry has been added to the leaderboard.' : ''}`;
+    notice.textContent = result.message;
     entryForm.appendChild(notice);
     entryForm.reset();
     loadLeaderboard();

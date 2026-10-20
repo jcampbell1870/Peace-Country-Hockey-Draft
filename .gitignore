@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: peace-country-hockey-draft
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: STRIPE_PAYMENT_LINK
+        value: ""

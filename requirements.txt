@@ -1,0 +1,364 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+from flask import Flask, jsonify, render_template, request
+
+app = Flask(__name__)
+
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+ENTRIES_PATH = DATA_DIR / "entries.json"
+
+BOXES = [
+    {
+        "id": "box-1",
+        "label": "Box 1",
+        "players": [
+            {"id": "p-1", "name": "Connor McDavid", "team": "EDM", "points": 92},
+            {"id": "p-2", "name": "Leon Draisaitl", "team": "EDM", "points": 88},
+            {"id": "p-3", "name": "Nathan MacKinnon", "team": "COL", "points": 86},
+            {"id": "p-4", "name": "Auston Matthews", "team": "TOR", "points": 84},
+            {"id": "p-5", "name": "David Pastrnak", "team": "BOS", "points": 83},
+        ],
+    },
+    {
+        "id": "box-2",
+        "label": "Box 2",
+        "players": [
+            {"id": "p-6", "name": "Jack Eichel", "team": "VGK", "points": 81},
+            {"id": "p-7", "name": "Mitchell Marner", "team": "TOR", "points": 80},
+            {"id": "p-8", "name": "Mikko Rantanen", "team": "COL", "points": 79},
+            {"id": "p-9", "name": "Sam Reinhart", "team": "FLA", "points": 77},
+            {"id": "p-10", "name": "Brad Marchand", "team": "BOS", "points": 75},
+        ],
+    },
+    {
+        "id": "box-3",
+        "label": "Box 3",
+        "players": [
+            {"id": "p-11", "name": "Alex Ovechkin", "team": "WSH", "points": 74},
+            {"id": "p-12", "name": "Patrick Kane", "team": "DET", "points": 72},
+            {"id": "p-13", "name": "Tage Thompson", "team": "BUF", "points": 70},
+            {"id": "p-14", "name": "Kyle Connor", "team": "WPG", "points": 69},
+            {"id": "p-15", "name": "Steven Stamkos", "team": "TBL", "points": 68},
+        ],
+    },
+    {
+        "id": "box-4",
+        "label": "Box 4",
+        "players": [
+            {"id": "p-16", "name": "Matthew Tkachuk", "team": "FLA", "points": 67},
+            {"id": "p-17", "name": "Nikita Kucherov", "team": "TBL", "points": 66},
+            {"id": "p-18", "name": "John Tavares", "team": "TOR", "points": 64},
+            {"id": "p-19", "name": "Zach Hyman", "team": "EDM", "points": 63},
+            {"id": "p-20", "name": "Bryan Rust", "team": "PIT", "points": 61},
+        ],
+    },
+    {
+        "id": "box-5",
+        "label": "Box 5",
+        "players": [
+            {"id": "p-21", "name": "Jake Guentzel", "team": "TBL", "points": 60},
+            {"id": "p-22", "name": "Andrei Svechnikov", "team": "CAR", "points": 59},
+            {"id": "p-23", "name": "Adrian Kempe", "team": "LAK", "points": 58},
+            {"id": "p-24", "name": "Trevor Zegras", "team": "ANA", "points": 57},
+            {"id": "p-25", "name": "Jeff Skinner", "team": "BUF", "points": 56},
+        ],
+    },
+    {
+        "id": "box-6",
+        "label": "Box 6",
+        "players": [
+            {"id": "p-26", "name": "Cale Makar", "team": "COL", "points": 95},
+            {"id": "p-27", "name": "Roman Josi", "team": "NSH", "points": 90},
+            {"id": "p-28", "name": "Victor Hedman", "team": "TBL", "points": 88},
+            {"id": "p-29", "name": "Adam Fox", "team": "NYR", "points": 86},
+            {"id": "p-30", "name": "Rasmus Dahlin", "team": "BUF", "points": 84},
+        ],
+    },
+    {
+        "id": "box-7",
+        "label": "Box 7",
+        "players": [
+            {"id": "p-31", "name": "Erik Karlsson", "team": "SJS", "points": 82},
+            {"id": "p-32", "name": "Miro Heiskanen", "team": "DAL", "points": 79},
+            {"id": "p-33", "name": "Charlie McAvoy", "team": "BOS", "points": 76},
+            {"id": "p-34", "name": "Dougie Hamilton", "team": "NJD", "points": 75},
+            {"id": "p-35", "name": "Aaron Ekblad", "team": "FLA", "points": 73},
+        ],
+    },
+    {
+        "id": "box-8",
+        "label": "Box 8",
+        "players": [
+            {"id": "p-36", "name": "Alex Pietrangelo", "team": "VGK", "points": 72},
+            {"id": "p-37", "name": "Josh Morrissey", "team": "WPG", "points": 70},
+            {"id": "p-38", "name": "Moritz Seider", "team": "DET", "points": 68},
+            {"id": "p-39", "name": "Darnell Nurse", "team": "EDM", "points": 66},
+            {"id": "p-40", "name": "Brent Burns", "team": "CAR", "points": 64},
+        ],
+    },
+    {
+        "id": "box-9",
+        "label": "Box 9",
+        "players": [
+            {"id": "p-41", "name": "Igor Shesterkin", "team": "NYR", "points": 93},
+            {"id": "p-42", "name": "Andrei Vasilevskiy", "team": "TBL", "points": 89},
+            {"id": "p-43", "name": "Ilya Sorokin", "team": "NYI", "points": 85},
+            {"id": "p-44", "name": "Juuse Saros", "team": "NSH", "points": 83},
+            {"id": "p-45", "name": "Connor Hellebuyck", "team": "WPG", "points": 81},
+        ],
+    },
+    {
+        "id": "box-10",
+        "label": "Box 10",
+        "players": [
+            {"id": "p-46", "name": "Semyon Varlamov", "team": "COL", "points": 78},
+            {"id": "p-47", "name": "Jacob Markstrom", "team": "CGY", "points": 76},
+            {"id": "p-48", "name": "Darcy Kuemper", "team": "WAS", "points": 74},
+            {"id": "p-49", "name": "Tristan Jarry", "team": "PIT", "points": 72},
+            {"id": "p-50", "name": "Filip Gustavsson", "team": "MIN", "points": 71},
+        ],
+    },
+    {
+        "id": "box-11",
+        "label": "Box 11",
+        "players": [
+            {"id": "p-51", "name": "Mika Zibanejad", "team": "NYR", "points": 70},
+            {"id": "p-52", "name": "Anze Kopitar", "team": "LAK", "points": 68},
+            {"id": "p-53", "name": "Elias Pettersson", "team": "VAN", "points": 66},
+            {"id": "p-54", "name": "Joe Pavelski", "team": "DAL", "points": 65},
+            {"id": "p-55", "name": "Tyler Bertuzzi", "team": "CHI", "points": 63},
+        ],
+    },
+    {
+        "id": "box-12",
+        "label": "Box 12",
+        "players": [
+            {"id": "p-56", "name": "Rasmus Andersson", "team": "CGY", "points": 62},
+            {"id": "p-57", "name": "Morgan Rielly", "team": "TOR", "points": 61},
+            {"id": "p-58", "name": "Noah Dobson", "team": "NYI", "points": 60},
+            {"id": "p-59", "name": "Cam Fowler", "team": "ANA", "points": 59},
+            {"id": "p-60", "name": "Tony DeAngelo", "team": "CAR", "points": 58},
+        ],
+    },
+    {
+        "id": "box-13",
+        "label": "Box 13",
+        "players": [
+            {"id": "p-61", "name": "Elias Lindholm", "team": "CGY", "points": 57},
+            {"id": "p-62", "name": "Max Pacioretty", "team": "WSH", "points": 55},
+            {"id": "p-63", "name": "J. T. Miller", "team": "VAN", "points": 54},
+            {"id": "p-64", "name": "Pavel Buchnevich", "team": "STL", "points": 52},
+            {"id": "p-65", "name": "Anthony Duclair", "team": "TBL", "points": 51},
+        ],
+    },
+    {
+        "id": "box-14",
+        "label": "Box 14",
+        "players": [
+            {"id": "p-66", "name": "Seth Jarvis", "team": "CAR", "points": 50},
+            {"id": "p-67", "name": "Cole Perfetti", "team": "WPG", "points": 49},
+            {"id": "p-68", "name": "Matt Boldy", "team": "MIN", "points": 48},
+            {"id": "p-69", "name": "Jordan Kyrou", "team": "STL", "points": 47},
+            {"id": "p-70", "name": "Alex DeBrincat", "team": "DET", "points": 46},
+        ],
+    },
+    {
+        "id": "box-15",
+        "label": "Box 15",
+        "players": [
+            {"id": "p-71", "name": "Jesper Bratt", "team": "NJD", "points": 45},
+            {"id": "p-72", "name": "Valeri Nichushkin", "team": "COL", "points": 44},
+            {"id": "p-73", "name": "Brady Tkachuk", "team": "OTT", "points": 43},
+            {"id": "p-74", "name": "Troy Terry", "team": "ANA", "points": 42},
+            {"id": "p-75", "name": "Dylan Cozens", "team": "BUF", "points": 41},
+        ],
+    },
+    {
+        "id": "box-16",
+        "label": "Box 16",
+        "players": [
+            {"id": "p-76", "name": "Jakub Voracek", "team": "CAR", "points": 40},
+            {"id": "p-77", "name": "Martin Necas", "team": "CAR", "points": 39},
+            {"id": "p-78", "name": "Kasperi Kapanen", "team": "EDM", "points": 38},
+            {"id": "p-79", "name": "John Carlson", "team": "WSH", "points": 37},
+            {"id": "p-80", "name": "Brandon Montour", "team": "FLA", "points": 36},
+        ],
+    },
+    {
+        "id": "box-17",
+        "label": "Box 17",
+        "players": [
+            {"id": "p-81", "name": "Mikhail Sergachev", "team": "TBL", "points": 35},
+            {"id": "p-82", "name": "Nico Hischier", "team": "NJD", "points": 34},
+            {"id": "p-83", "name": "Nick Suzuki", "team": "MTL", "points": 33},
+            {"id": "p-84", "name": "Patrik Laine", "team": "CBJ", "points": 32},
+            {"id": "p-85", "name": "Jaden Schwartz", "team": "SEA", "points": 31},
+        ],
+    },
+    {
+        "id": "box-18",
+        "label": "Box 18",
+        "players": [
+            {"id": "p-86", "name": "Ryan Nugent-Hopkins", "team": "EDM", "points": 30},
+            {"id": "p-87", "name": "Pius Suter", "team": "DET", "points": 29},
+            {"id": "p-88", "name": "Jared McCann", "team": "SEA", "points": 28},
+            {"id": "p-89", "name": "Oliver Ekman-Larsson", "team": "FLA", "points": 28},
+            {"id": "p-90", "name": "Sam Bennett", "team": "OTT", "points": 27},
+        ],
+    },
+    {
+        "id": "box-19",
+        "label": "Box 19",
+        "players": [
+            {"id": "p-91", "name": "Jonathan Marchessault", "team": "VGK", "points": 26},
+            {"id": "p-92", "name": "Tyson Foerster", "team": "PHI", "points": 25},
+            {"id": "p-93", "name": "Ryan O'Reilly", "team": "TOR", "points": 24},
+            {"id": "p-94", "name": "Matt Duchene", "team": "DAL", "points": 23},
+            {"id": "p-95", "name": "Dylan Strome", "team": "WSH", "points": 22},
+        ],
+    },
+    {
+        "id": "box-20",
+        "label": "Box 20",
+        "players": [
+            {"id": "p-96", "name": "T. J. Oshie", "team": "WSH", "points": 21},
+            {"id": "p-97", "name": "Pat Maroon", "team": "TBL", "points": 20},
+            {"id": "p-98", "name": "Phil Kessel", "team": "VGK", "points": 19},
+            {"id": "p-99", "name": "Nikolaj Ehlers", "team": "WPG", "points": 18},
+            {"id": "p-100", "name": "Vladimir Tarasenko", "team": "OTT", "points": 17},
+        ],
+    },
+]
+
+PRIZE_INFO = {"entryFee": 20, "firstPrizeCash": 1000}
+PAYMENT_CONFIG = {
+    "stripePaymentLink": "",
+    "stripePosNote": "Set STRIPE_PAYMENT_LINK in Render to your company Stripe POS checkout link.",
+}
+
+
+def ensure_data_file() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    if not ENTRIES_PATH.exists():
+        ENTRIES_PATH.write_text("[]", encoding="utf-8")
+
+
+def load_entries() -> list:
+    ensure_data_file()
+    try:
+        return json.loads(ENTRIES_PATH.read_text(encoding="utf-8") or "[]")
+    except json.JSONDecodeError:
+        return []
+
+
+def save_entries(entries: list) -> None:
+    ensure_data_file()
+    ENTRIES_PATH.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+
+
+def all_players() -> list:
+    return [player for box in BOXES for player in box["players"]]
+
+
+def find_player(player_id: str):
+    for player in all_players():
+        if player["id"] == player_id:
+            return player
+    return None
+
+
+def refresh_points_if_due() -> None:
+    """Applies a simple weekly update trigger for a Monday 7:00 PM ET refresh."""
+    now = datetime.now(ZoneInfo("America/New_York"))
+    current_week_key = now.strftime("%Y-%W")
+    state_path = DATA_DIR / "refresh_state.json"
+    state = {}
+    if state_path.exists():
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8") or "{}")
+        except json.JSONDecodeError:
+            state = {}
+
+    if now.weekday() == 0 and now.hour == 19 and state.get("week_key") != current_week_key:
+        state["week_key"] = current_week_key
+        state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
+
+
+def build_leaderboard(entries: list) -> list:
+    refresh_points_if_due()
+    rows = []
+    for entry in entries:
+        total = 0
+        for player_id in entry.get("selections", []):
+            player = find_player(player_id)
+            if player:
+                total += int(player.get("points", 0))
+        rows.append({
+            "name": entry.get("name"),
+            "email": entry.get("email"),
+            "createdAt": entry.get("createdAt"),
+            "total": total,
+        })
+    rows.sort(key=lambda item: item["total"], reverse=True)
+    return rows
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+@app.route("/api/boxes")
+def boxes():
+    return jsonify({"boxes": BOXES, "prizeInfo": PRIZE_INFO, "payment": PAYMENT_CONFIG})
+
+
+@app.route("/api/config")
+def config():
+    return jsonify({"prizeInfo": PRIZE_INFO, "payment": PAYMENT_CONFIG})
+
+
+@app.route("/api/leaderboard")
+def leaderboard():
+    entries = load_entries()
+    return jsonify({"leaderboard": build_leaderboard(entries)})
+
+
+@app.route("/api/entry", methods=["POST"])
+def submit_entry():
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip()
+    selections = payload.get("selections") or []
+
+    if not name or not email or not isinstance(selections, list) or len(selections) != 20:
+        return jsonify({"error": "Please provide your name, email, and exactly 20 selections."}), 400
+
+    if len(set(selections)) != 20:
+        return jsonify({"error": "Each box must have a unique player selection."}), 400
+
+    for player_id in selections:
+        if not find_player(player_id):
+            return jsonify({"error": "One or more selections are invalid."}), 400
+
+    entries = load_entries()
+    entry = {
+        "id": f"entry-{len(entries) + 1}",
+        "name": name,
+        "email": email,
+        "selections": selections,
+        "createdAt": datetime.now(ZoneInfo("UTC")).isoformat(),
+    }
+    entries.append(entry)
+    save_entries(entries)
+    return jsonify({"message": "Draft entry created successfully.", "leaderboard": build_leaderboard(entries)})
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=False)

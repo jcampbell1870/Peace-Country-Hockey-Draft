@@ -1,11 +1,33 @@
-{
-  "name": "peace-country-hockey-draft",
-  "version": "1.0.0",
-  "description": "Online NHL regular season and playoffs draft hockey pool",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "license": "MIT"
-}
+# Peace Country Hockey Draft
+
+A Python 3 web service for an online NHL regular season and playoffs draft hockey pool.
+
+## Features
+- 20 draft boxes with 5 NHL players each
+- 1 player selected from each box for 20 total picks
+- $20 entry fee
+- $1,000 first-place cash prize
+- Weekly score refresh Monday at 7:00 p.m. Eastern Standard Time
+- Stripe payment option for company point-of-sale integration
+
+## Local development
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python app.py
+```
+
+Then open: http://localhost:8000
+
+## Render deployment
+1. Create a Render account.
+2. Connect this repository.
+3. Add a new Web Service.
+4. Render will use the included `render.yaml` and `requirements.txt` automatically.
+5. In the Render service environment variables, add:
+   - `STRIPE_PAYMENT_LINK` = your company Stripe checkout or POS link
+
+## Notes
+The app uses Flask and Gunicorn so it is ready for a Render Python web service deployment.
+
