@@ -1,0 +1,11 @@
+{
+  "name": "peace-country-hockey-draft",
+  "version": "1.0.0",
+  "description": "Online NHL regular season and playoffs draft hockey pool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,143 @@
+const boxList = document.getElementById('boxList');
+const leaderboardEl = document.getElementById('leaderboard');
+const entryForm = document.getElementById('entryForm');
+const payLink = document.getElementById('payLink');
+
+async function fetchJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    ...options,
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Request failed.');
+  }
+  return data;
+}
+
+function renderBoxes(boxes) {
+  boxList.innerHTML = boxes
+    .map(
+      (box, index) => `
+        <div class="box-card">
+          <h4>${box.label}</h4>
+          <div class="player-list">
+            ${box.players
+              .map(
+                (player) => `
+                  <label class="player-option">
+                    <input type="radio" name="box-${index + 1}" value="${player.id}" required />
+                    <span class="player-label">
+                      <strong>${player.name}</strong>
+                      <span>${player.team}</span>
+                    </span>
+                  </label>
+                `
+              )
+              .join('')}
+          </div>
+        </div>
+      `
+    )
+    .join('');
+}
+
+async function loadPaymentConfig() {
+  try {
+    const data = await fetchJson('/api/config');
+    const paymentLink = data.payment?.stripePaymentLink || '#';
+    payLink.href = paymentLink;
+
+    if (!paymentLink || paymentLink === '#') {
+      payLink.textContent = 'Set Stripe Payment Link';
+      payLink.setAttribute('aria-disabled', 'true');
+      payLink.style.opacity = '0.7';
+      payLink.style.pointerEvents = 'none';
+      payLink.title = data.payment?.stripePosNote || 'Add your Stripe payment link or POS instructions.';
+    }
+  } catch (error) {
+    payLink.href = '#';
+    payLink.textContent = 'Stripe link unavailable';
+  }
+}
+
+function renderLeaderboard(entries) {
+  if (!entries || entries.length === 0) {
+    leaderboardEl.innerHTML = '<div class="notification">No entries yet. Be the first to submit a draft.</div>';
+    return;
+  }
+
+  leaderboardEl.innerHTML = entries
+    .map(
+      (entry, index) => `
+        <div class="leaderboard-row">
+          <div class="rank">#${index + 1}</div>
+          <div class="name">${entry.name}</div>
+          <div class="email">${entry.email}</div>
+          <div class="points">${entry.total} pts</div>
+        </div>
+      `
+    )
+    .join('');
+}
+
+async function loadLeaderboard() {
+  try {
+    const data = await fetchJson('/api/leaderboard');
+    renderLeaderboard(data.leaderboard);
+  } catch (error) {
+    leaderboardEl.innerHTML = `<div class="notification error">${error.message}</div>`;
+  }
+}
+
+async function loadBoxes() {
+  try {
+    const data = await fetchJson('/api/boxes');
+    renderBoxes(data.boxes);
+    document.title = 'Peace Country Hockey Draft';
+  } catch (error) {
+    boxList.innerHTML = `<div class="notification error">${error.message}</div>`;
+  }
+}
+
+entryForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const formData = new FormData(entryForm);
+  const selections = Array.from({ length: 20 }, (_, index) => {
+    const key = `box-${index + 1}`;
+    return formData.get(key) || null;
+  }).filter(Boolean);
+
+  const payload = {
+    name: document.getElementById('entrantName').value,
+    email: document.getElementById('entrantEmail').value,
+    selections,
+  };
+
+  try {
+    const result = await fetchJson('/api/entry', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+
+    const notice = document.createElement('div');
+    notice.className = 'notification';
+    notice.textContent = `${result.message} ${result.leaderboard?.length ? 'Your entry has been added to the leaderboard.' : ''}`;
+    entryForm.appendChild(notice);
+    entryForm.reset();
+    loadLeaderboard();
+  } catch (error) {
+    const notice = document.createElement('div');
+    notice.className = 'notification error';
+    notice.textContent = error.message;
+    entryForm.appendChild(notice);
+  }
+});
+
+loadBoxes();
+loadLeaderboard();
+loadPaymentConfig();
